@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "guesthost"
+version = "0.0.1"
+authors = [
+  { name="Varadharajan Srinivasan", email="vardha@iiserb.ac.in" },
+  { name="Sayan Maity", email="sayan16@iiserb.ac.in" },
+  { name="Rashid Rafeek", email="rashid20@iiserb.ac.in" },
+]
+description = "A package to work with guest-host atomic systems"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
+]
