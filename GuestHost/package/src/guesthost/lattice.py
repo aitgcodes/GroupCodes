@@ -1,6 +1,7 @@
 import numpy as np
 from guesthost.analysis.functions_modules import (
-        proj2plane, self_correlation_P1, self_correlation_P2
+        proj2plane, self_correlation_P1, self_correlation_P2,
+        distance_of_point_on_plane
 )
 from pymatgen.util.coord_cython import pbc_shortest_vectors
 from pymatgen.core import Lattice as PmgLattice
@@ -23,9 +24,10 @@ class Lattice:
         self.nx = nx
         self.ny = ny
         self.nz = nz
+        self.ncells = (nx, ny, nz)
         self.pbc = pbc
 
-    def compute_for_all(self, fn, dtype=float, *args, **kwargs):
+    def compute_for_all(self, fn, *args, dtype=float, **kwargs):
         all_vals = np.zeros((self.nx, self.ny, self.nz), dtype=dtype)
 
         for ix, iy, iz in np.ndindex(self.nx, self.ny, self.nz):
@@ -87,29 +89,33 @@ class HPLattice(Lattice):
 
         return theta_vals, phi_vals
 
+    def shift_index(self, ind, ax, n=1):
+        ind = list(ind)
+        ind[ax] = (ind[ax]+n) % self.ncells[ax]
+
+        return ind
+
+    def get_motif(self, ind):
+        ix, iy, iz = ind
+
+        return self.motif_grid[ix, iy, iz]
+
+    def pb_environment_coords(self, ind):
+        ax_positions = np.array([
+                self.get_motif(self.shift_index(ind, 0)).fragments[1].B,
+                self.get_motif(self.shift_index(ind, 1)).fragments[1].B,
+                self.get_motif(self.shift_index(ind, 2)).fragments[1].B
+            ])
+
+        return ax_positions
+
     def pb_environment_cell(self, ind):
         ix, iy, iz = ind
-        nx = self.nx
-        ny = self.ny
-        nz = self.nz
-        o_host_frg = self.motif_grid[ix, iy, iz].fragments[1]
+        o_host_frg = self.get_motif(ind).fragments[1]
         o_pos = o_host_frg.B
         
-        host_frgs = [
-            self.motif_grid[(ix+1)%nx,iy,iz].fragments[1],
-            self.motif_grid[ix,(iy+1)%ny,iz].fragments[1],
-            self.motif_grid[ix,iy,(iz+1)%nz].fragments[1]
-        ]
-        # ax_positions = np.array([
-        #         self.motif_grid[(ix+1)%nx,iy,iz].fragments[1].B,
-        #         self.motif_grid[ix,(iy+1)%ny,iz].fragments[1].B,
-        #         self.motif_grid[ix,iy,(iz+1)%nz].fragments[1].B
-        #     ])
-        ax_positions = np.array([
-            host_frgs[0].B,
-            host_frgs[1].B,
-            host_frgs[2].B
-        ])
+        ax_positions = self.pb_environment_coords(ind)
+
         if self.pbc:
             lcell = pbc_vectors(self.cell, o_pos, ax_positions).T
         else:
@@ -117,7 +123,67 @@ class HPLattice(Lattice):
 
         return lcell
 
-def pbc_vectors(cell, v1, v2):
+    def pb_br_pb_angle(self, ind, ax):
+        ix, iy, iz = ind
+        hostfrg_orig = self.get_motif(ind).fragments[1]
+        hostfrg_ax = self.get_motif(self.shift_index(ind, ax)).fragments[1]
+
+        atoms_orig = hostfrg_orig.atoms
+        atoms_ax = hostfrg_ax.atoms
+        atoms = atoms_orig + atoms_ax
+
+        x_ind = ax+1
+        ang = atoms.get_angle(0, x_ind, 4, mic=self.pbc)
+
+        return ang
+
+    def pb_br_pb_angle_hostrelative(self, ind, ax, coup_dir):
+        orig_ang = self.pb_br_pb_angle(ind, ax)
+        pln = (ax, coup_dir)
+        pln_dist = self.br_distance_from_plane(ind, pln, ax)
+        sign = np.sign(pln_dist)
+
+        if sign == 1:
+            ang = 360-orig_ang
+        else:
+            ang = orig_ang
+        
+        return ang
+
+    def br_environment_coords(self, ind):
+        o_host_frg = self.get_motif(ind).fragments[1]
+        
+        ax_positions = np.array([
+                o_host_frg.X[0],
+                self.get_motif(self.shift_index(ind, 0, -1)).fragments[1].X[0],
+                o_host_frg.X[1],
+                self.get_motif(self.shift_index(ind, 1, -1)).fragments[1].X[1],
+                o_host_frg.X[2],
+                self.get_motif(self.shift_index(ind, 2, -1)).fragments[1].X[2],
+            ])
+
+        return ax_positions
+
+    def br_distance_from_plane(self, ind, pln, br_dir):
+        o_host_frg = self.get_motif(ind).fragments[1]
+        o_pos = o_host_frg.B
+        pb_coords = self.pb_environment_coords(ind)
+        br_coords = self.br_environment_coords(ind)
+
+        all_coords = np.concatenate([pb_coords, br_coords])
+        if self.pbc:
+            all_coords = pbc_vectors(self.cell, o_pos, all_coords, relative=False)
+
+        br_ind = 3+(2*br_dir)
+        dist_dat = distance_of_point_on_plane(
+                o_pos, all_coords[pln[0]], all_coords[pln[1]], all_coords[br_ind]
+        )
+        (ax_sign,) = {0,1,2} - set(pln)
+        dist = dist_dat[0]*np.sign(dist_dat[1][ax_sign])
+
+        return dist
+
+def pbc_vectors(cell, v1, v2, orig_ind=0, relative=True):
     """Obtain shortest vectors with PBC for the given vectors"""
 
     pmglattice = PmgLattice(cell)
@@ -125,7 +191,9 @@ def pbc_vectors(cell, v1, v2):
     v2_fr = pmglattice.get_fractional_coords(v2)
     
     # The first vector in v1 is taken as origin
-    svecs = pbc_shortest_vectors(pmglattice, v1_fr, v2_fr)[0]
+    svecs = pbc_shortest_vectors(pmglattice, v1_fr, v2_fr)[orig_ind]
+    if not relative:
+        svecs = svecs+v1
 
     return svecs
 
@@ -146,6 +214,14 @@ class LatticeTrajectory:
         vals = []
         for lat in self.lattices:
             val = fn(lat, *args, **kwargs)
+            vals.append(val)
+
+        return vals
+    
+    def compute_for_all_cells(self, fn, *args, dtype=float, **kwargs):
+        vals = []
+        for lat in self.lattices:
+            val = lat.compute_for_all(fn, *args, dtype=dtype, **kwargs)
             vals.append(val)
 
         return vals

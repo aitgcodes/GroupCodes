@@ -25,7 +25,7 @@ class MethylAmmonium:
         self.HN = None
         self.CN = None
 
-    def assign(self,pos,indices=None):
+    def assign(self,pos,indices=None,atoms=None):
 
         ### MA assigned as 0:C, 1-3:H (of C), 4:N, 5-7:H (of N)
         self.C = pos[self.atlst[0]]
@@ -44,6 +44,7 @@ class MethylAmmonium:
         self.CN = d/np.linalg.norm(d)
         
         self.indices = indices[self.atlst]
+        self.atoms = atoms[self.atlst]
 
     def planify(self,a):
 
@@ -113,7 +114,7 @@ class Host:
         self.B = None
         self.X = None
 
-    def assign(self,pos, indices=None):
+    def assign(self,pos, indices=None, atoms=None):
 
         ### BX3 ion assigned as 0:B, 1-3:X (in-cell, x<y<z)
         self.B = pos[self.atlst[0]]
@@ -125,6 +126,7 @@ class Host:
         self.Xo = np.zeros((3,3),dtype='float64') # out-cell X part of Octahedra (-x<-y<-z)
 
         self.indices = indices[self.atlst]
+        self.atoms = atoms[self.atlst]
 
     def buildOh(self,hostlat):
 
@@ -190,6 +192,7 @@ class Trajectory:
     def readase(self, fname):
         # Read using ase
         atoms_list = read(fname, index=":")
+        self.atoms_list = atoms_list
 
         for atoms in atoms_list:
             self.coords.append(atoms.positions)
@@ -244,7 +247,7 @@ class Trajectory:
 
         molt = []
 
-        for atoms in self.coords:
+        for i, atoms in enumerate(self.coords):
             molecule = [fragment(atlst) for i in range(ncells)]
             if ordering == "type":
                 if unit_order is None:
@@ -258,7 +261,7 @@ class Trajectory:
                     for at_ind, at_sym in zip(unit_order, unit_syms):
                         at_ind_c = at_ind + (icell * count_dict[at_sym])
                         idx.append(at_ind_c)
-                    molecule[icell].assign(atoms[idx], indices=np.array(idx))
+                    molecule[icell].assign(atoms[idx], indices=np.array(idx), atoms=self.atoms_list[i][idx])
             elif ordering == "unitcell":
                 for icell in range(ncells):
                     idx = list(range(icell*ucell,(icell+1)*ucell))

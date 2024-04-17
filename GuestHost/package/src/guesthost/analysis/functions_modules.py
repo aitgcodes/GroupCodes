@@ -109,7 +109,8 @@ def distance_of_point_on_plane(l1,l2,l3,P4):
     dis=np.linalg.norm(v)   
     s=P4-proj_P
     d=[dis,s]
-    return np.array(d)
+    # return np.array(d)
+    return d
 
 def bandpass(fL,fH,b,s):
     N = int(np.ceil((4 / b)))
@@ -264,7 +265,7 @@ def proj2plane(iax,r,h):
     anga = math.acos(np.dot(r,h[i,:])/(rmag*amag))
     vprp = np.dot(r,g[i,:])*h[i,:]
     vpl = r - vprp
-    vplmag = magnitude(vpl)
+    vplmag = max(magnitude(vpl), 1e-8)
     phase = 1.0
     angb = np.dot(vpl,h[j,:])/(vplmag*bmag)
     angc = np.dot(vpl,g[k,:]) ## This is just the component of vector c in vector r
