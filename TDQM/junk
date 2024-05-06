@@ -1,0 +1,20 @@
+No. of states : 3
+[[ 0.   0.1  0. ]
+ [ 0.1  1.   0.5]
+ [ 0.   0.5  1. ]]
+Laser turned on with ...
+	Electric Field Amplitude (a.u.):  1.0
+	Central frequency of laser (a.u.):  0.5
+	Laser polarization:  [1.0, 0.0, 0.0]
+
+
+Propagator details ...
+	Intial time for simulation:  0.0
+	Total number of simulation steps:  100000
+	Time step used for simulation (a.u.):  0.01
+ Exponential method used:  power
+ Propagation method used:  etrs
+
+
+
+Starting propagation ...

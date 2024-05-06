@@ -1,0 +1,5 @@
+3                   #number of states (nst)
+0.0 0.5 2.0         #diagonal elements of H0 in eigenbasis (energies)
+0.0 0.0 0.0         #diagonal elements of W in H0 eigenbasis
+0.1                 #lower triangular off-diagonals of W (2-nst)
+0.0 0.0
