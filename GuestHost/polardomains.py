@@ -1,5 +1,6 @@
 import numpy as np
 import sys
+import argparse
 # from orderparams_latest import *
 
 ########################################################################
@@ -44,7 +45,7 @@ def get_domains_from_dihedral(arr_t, alpha, iref, N):
     get_domain_sizes = lambda a, b: [j-i-1 for (i,j) in zip(a,b)]
 
     v=get_dihedral_from_home(arr_t,iref)
-    v=np.cos(np.deg2rad(v))
+    v=np.cos(v)
     V=copy.deepcopy(v)
     V[1:] = V[1:]-np.cos(np.deg2rad(alpha))
 
@@ -122,56 +123,79 @@ def polar_op(arr,alpha):    # for a single chain/stack taking input [ [d1,d2,d3,
 
     return all_tp 
 
+def convert_angle(angle, unit):
+    if unit == 'degrees':
+        return np.deg2rad(angle)
+    elif unit == 'radians':
+        return angle
+    else:
+        raise ValueError("Unknown unit. Use 'degrees' or 'radians'.")
+
+def plot_histogram(ptimes):
+    from matplotlib import pyplot as plt
+
+    fig, ax = plt.subplots(figsize =(10, 7))
+    lmin = 0.0
+    lmax = max(ptimes)
+    dl = (lmax-lmin)/float(10)
+    ax.hist(ptimes, bins = [lmin+i*dl for i in range(10)])
+
+    # Show plot
+    plt.show()
+
+def main():
+    parser = argparse.ArgumentParser(description="Obtain the persistence time for each domain sizes from the domains contained in the provided data.")
+    parser.add_argument('input_file', type=str, help="The input filename containing the dihedrals in either radians or degrees.")
+    parser.add_argument('--unit', choices=['radians', 'degrees'], default='degrees', help="The unit of the dihdral angles in the input file.")
+    parser.add_argument('axis', type=int, choices=[0, 1, 2], help="The axis (0, 1, or 2) along which chains are chosen, usually the unique axis of the simulation.")
+    parser.add_argument('output_file', nargs='?', type=str, help="The output filename to save the obtained persistence times (optional).")
+    parser.add_argument('--plot', type=int, help="Plot a histogram of persistence times for the specified domain size.")
+
+    args = parser.parse_args()
+
+    A=np.loadtxt(args.input_file) # Dihedral angle data at all frames with respect to nearest neighbor
+    uax=args.axis # unique axis
+
+    data = [] # List of arrays (n x n x n) containing dihedral angle with respect to the nearest neighbor with each array denoting a frame
+    (nt,nc)=A.shape
+    n=round((nc-1)**(1./3)) #### Assuming the grid is cubic
+ 
+    for t in range(len(A)):
+        angs = convert_angle(A[t,1:], args.unit)
+        data.append(np.reshape(angs,(n,n,n)))
+ 
+    OP=[[] for i in range(n)]
+ 
+    for j in range(n):
+        for k in range(n):
+          s=choose_stack(data,uax,j,k) # List of lists, where each list contains dihedrals for a chain indexed by j,k for a specific frame
+          OP_stack=polar_op(s,90.0)
+          for i in range(n):
+              OP[i] += OP_stack[i]
+ 
+    # Write OP to file
+    if args.output_file:
+        import csv
+        outfile = sys.argv[3]
+        with open(outfile, "w") as f:
+            wr = csv.writer(f, delimiter=" ")
+            wr.writerows(OP)
+ 
+    ### OP_stack will be a list of lists.
+    ### The outer list is indexed by domain size (>0)
+    ### and the inner list (for each size) has a collection of persistence times
+    ### OP will be a similar list but over all stacks in a given plane.
+    ### One can get, for instance, a distribution of persistence times for a given
+    ### domain size. 
+    for i in range(n):
+        if len(OP[i]) != 0:
+            print("Maximum and average persistence times for domain with {0:2d} sites are {1:4d} and {2:10.2f}, respectively".format(i+1,max(OP[i]),sum(OP[i])/float(len(OP[i]))))
+        else:
+            print("Domain with {0:2d} sites is empty".format(i+1))
+ 
+    if args.plot:
+        dsize = args.plot
+        plot_histogram(OP[dsize])
+
 if __name__ == "__main__":
-
-#######################################################################
-### Read in the data and create a list of grids #######################
-   A=np.loadtxt(sys.argv[1]) # Dihedral angle data at all frames with respect to nearest neighbor
-   uax=int(sys.argv[2]) # unique axis
-   data = [] # List of arrays (n x n x n) containing dihedral angle with respect to the nearest neighbor with each array denoting a frame
-   (nt,nc)=A.shape
-   n=round((nc-1)**(1./3)) #### Assuming the grid is cubic
-
-   for t in range(len(A)):
-       data.append(np.reshape(A[t,1:],(n,n,n)))
-
-   OP=[[] for i in range(n)]
-
-   for j in range(n):
-       for k in range(n):
-         s=choose_stack(data,uax,j,k) # List of lists, where each list contains dihedrals for a chain indexed by j,k for a specific frame
-         OP_stack=polar_op(s,90.0)
-         for i in range(n):
-             OP[i] += OP_stack[i]
-
-   # Write OP to file
-   if len(sys.argv) > 3:
-       import csv
-       outfile = sys.argv[3]
-       with open(outfile, "w") as f:
-           wr = csv.writer(f, delimiter=" ")
-           wr.writerows(OP)
-
-   ### OP_stack will be a list of lists.
-   ### The outer list is indexed by domain size (>0)
-   ### and the inner list (for each size) has a collection of persistence times
-   ### OP will be a similar list but over all stacks in a given plane.
-   ### One can get, for instance, a distribution of persistence times for a given
-   ### domain size. 
-   for i in range(n):
-       if len(OP[i]) != 0:
-           print("Maximum and average persistence times for domain with {0:2d} sites are {1:4d} and {2:10.2f}, respectively".format(i+1,max(OP[i]),sum(OP[i])/float(len(OP[i]))))
-       else:
-           print("Domain with {0:2d} sites is empty".format(i+1))
-
-   # from matplotlib import pyplot as plt
-
-   # j = 3
-   # fig, ax = plt.subplots(figsize =(10, 7))
-   # lmin = 0.0
-   # lmax = max(OP[j])
-   # dl = (lmax-lmin)/float(10)
-   # ax.hist(OP[j], bins = [lmin+i*dl for i in range(10)])
-
-   # # Show plot
-   # plt.show()
+    main()
