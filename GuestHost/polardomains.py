@@ -194,7 +194,7 @@ def main():
             print("Domain with {0:2d} sites is empty".format(i+1))
  
     if args.plot:
-        dsize = args.plot
+        dsize = (args.plot)-1
         plot_histogram(OP[dsize])
 
 if __name__ == "__main__":
