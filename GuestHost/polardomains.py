@@ -149,7 +149,7 @@ def main():
     parser.add_argument('--unit', choices=['radians', 'degrees'], default='degrees', help="The unit of the dihdral angles in the input file.")
     parser.add_argument('axis', type=int, choices=[0, 1, 2], help="The axis (0, 1, or 2) along which chains are chosen, usually the unique axis of the simulation.")
     parser.add_argument('output_file', nargs='?', type=str, help="The output filename to save the obtained persistence times (optional).")
-    parser.add_argument('--plot', type=int, help="Plot a histogram of persistence times for the specified domain size.")
+    parser.add_argument('--plot', type=int, metavar='DOMAIN_SIZE', help="Plot a histogram of persistence times for the specified domain size.")
 
     args = parser.parse_args()
 
