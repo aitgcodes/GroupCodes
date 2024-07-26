@@ -176,7 +176,7 @@ def main():
     # Write OP to file
     if args.output_file:
         import csv
-        outfile = sys.argv[3]
+        outfile = args.outfile
         with open(outfile, "w") as f:
             wr = csv.writer(f, delimiter=" ")
             wr.writerows(OP)
