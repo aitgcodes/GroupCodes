@@ -1,0 +1,4 @@
+The density matrix in the atomic basis can be produced by either replaying the wf.ulm file from
+the pulse simulation or from the pulse convolution in the energy decomposition code
+
+
