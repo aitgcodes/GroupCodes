@@ -1,0 +1,12 @@
+# Charge paritioning in Ag147_TMD
+dQ_ag147 =    0.7516910000003918
+dQ_tmd =    -0.7341659999999592
+# Charge paritioning in Ag55_TMD
+dQ_ag55 =    0.25833600000032675
+dQ_tmd =    -0.28945999999996275
+# Charge paritioning in Au147_TMD
+dQ_au147 =    -0.8505970000005618
+dQ_tmd =    0.8691919999996571
+# Charge paritioning in Au55_TMD
+dQ_au55 =    -1.0119709999999031
+dQ_tmd =    0.995202999999492
