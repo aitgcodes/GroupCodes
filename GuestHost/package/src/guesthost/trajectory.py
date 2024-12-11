@@ -265,7 +265,7 @@ class Trajectory:
             elif ordering == "unitcell":
                 for icell in range(ncells):
                     idx = list(range(icell*ucell,(icell+1)*ucell))
-                    molecule[icell].assign(atoms[idx], indices=np.array(idx))
+                    molecule[icell].assign(atoms[idx], indices=np.array(idx), atoms=self.atoms_list[i][idx])
             molt.append(molecule)
 
         return molt
