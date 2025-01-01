@@ -2,8 +2,8 @@ import sys
 import numpy as np
 from ase.io import read
 from trajproc import Trajectory, MethylAmmonium
-from orderparams import listplotcorr as lpc
-from orderparams import gridcorrvec as gcv
+# from orderparams import listplotcorr as lpc
+# from orderparams import gridcorrvec as gcv
 
 #### Read in the parameters
 n = 4 ### No. of unit cells in each direction
@@ -47,6 +47,8 @@ for mas in mas_t:
     madip = np.array(madip)
     tort.append(torsion)
     madipt.append(madip)
+    print("Torsion: ", tort)
+    print("MA dip:", madip)
 
 (data,err) = lpc(tort,tvals,mode="corr",avg="all")
 fp=open('data.dat','w')

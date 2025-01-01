@@ -117,7 +117,7 @@ class Host:
 
         return 
 
-    def OhDist(self):
+#    def OhDist(self):
 
 
 #    def OhTilt:
