@@ -1,4 +1,5 @@
 import unittest
+from pathlib import Path
 import guesthost as gh
 import numpy as np
 from guesthost.analysis.functions_modules import print_file
@@ -7,7 +8,7 @@ class TestFragmentize(unittest.TestCase):
 
     def test_create_fragments(self):
         # Prepare data and inputs for the test
-        mpb_sys_ini_path = "structures/mpb.xyz"
+        mpb_sys_ini_path = Path(__file__).parent / "structures" / "mpb.xyz"
         trj = gh.Trajectory(mpb_sys_ini_path, order=True)
         
         ma_inds = [0, 1, 2, 3, 4, 5, 6, 7]
@@ -29,4 +30,3 @@ class TestFragmentize(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-

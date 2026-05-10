@@ -1,24 +1,21 @@
 import numpy as np
 import unittest
+from pathlib import Path
 import guesthost as gh
 from guesthost.analysis.functions_modules import print_file
 
 class TestLatticeTorsions(unittest.TestCase):
     def setUp(self):
         # Set up the test with required inputs
-        self.mpb_sys_ini_path = "structures/mpb_trajectory.xyz"  # Path to your input file
+        self.mpb_sys_ini_path = Path(__file__).parent / "structures" / "mpb_trajectory.xyz"
         self.pref = "test"  # Prefix for file names
         self.n = 4  # Number of unitcells in each direction
         self.trj = gh.Trajectory(self.mpb_sys_ini_path)
-        self.all_inds = [320, 384, 385, 386, 256, 387, 388, 389, 0, 64, 65, 66]
-        self.ma_inds = [0, 1, 2, 3, 4, 5, 6, 7]
-        self.host_inds = [8, 9, 10, 11]
 
     def test_lattice_torsions(self):
-        # Fragmentize and get torsion data
-        lattices = self.trj.create_lattice(
-            64, [self.ma_inds, self.host_inds], [gh.MethylAmmonium, gh.Host],
-            (self.n, self.n, self.n), gh.HPLattice, ordering="type", unit_order=self.all_inds
+        lattices = self.trj.create_hplattice(
+            unitcell_data=gh.UNITCELL_INDEXDATA_MPB_4x4x4,
+            supercell_size=(self.n, self.n, self.n),
         )
         lattraj = gh.LatticeTrajectory(lattices)
         
@@ -37,8 +34,9 @@ class TestLatticeTorsions(unittest.TestCase):
         t_dat_C = np.array(t_dat_C)
 
         # Load reference data
-        ref_t_N = np.loadtxt('reference_data/reference_Torsion_N.dat')
-        ref_t_C = np.loadtxt('reference_data/reference_Torsion_C.dat')
+        ref_data_dir = Path(__file__).parent / "reference_data"
+        ref_t_N = np.loadtxt(ref_data_dir / 'reference_Torsion_N.dat')
+        ref_t_C = np.loadtxt(ref_data_dir / 'reference_Torsion_C.dat')
 
         # Compare with reference data
         np.testing.assert_allclose(t_dat_N, ref_t_N, atol=1e-6, err_msg="Torsion data for N does not match reference.")
